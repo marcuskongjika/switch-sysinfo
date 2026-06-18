@@ -5,16 +5,17 @@
 #include "data.h"
 #include "services.h"
 #include "pages.h"
+#include "usb_bridge.h"
 
 static const char *TAB_NAMES[T_COUNT] = {
     "System", "Hardware", "Power", "Storage",
-    "Network", "Controllers", "Motion"
+    "Network", "Controllers", "Motion", "USB"
 };
 
 typedef void (*PageFn)(int, const SysData *);
 static const PageFn PAGE_FNS[T_COUNT] = {
     page_system, page_hardware, page_power, page_storage,
-    page_network, page_controllers, page_motion
+    page_network, page_controllers, page_motion, page_usb
 };
 
 int main(void) {
@@ -43,6 +44,7 @@ int main(void) {
     SysData  data = {0};
     services_init(&svc);
     services_load_static(&svc, &data);
+    usb_bridge_start();
 
     int curTab = 0;
 
@@ -69,6 +71,7 @@ int main(void) {
         svcSleepThread(33333333ULL);
     }
 
+    usb_bridge_stop();
     services_exit(&svc);
 
     TTF_CloseFont(fSm); TTF_CloseFont(fLbl); TTF_CloseFont(fVal);

@@ -227,7 +227,8 @@ main.o: C:/Users/marc/sysinfo/source/main.c \
  C:/Users/marc/sysinfo/include/render.h \
  C:/Users/marc/sysinfo/include/data.h \
  C:/Users/marc/sysinfo/include/services.h \
- C:/Users/marc/sysinfo/include/pages.h
+ C:/Users/marc/sysinfo/include/pages.h \
+ C:/Users/marc/sysinfo/include/usb_bridge.h
 C:/devkitPro/portlibs/switch/include/SDL2/SDL.h:
 C:/devkitPro/portlibs/switch/include/SDL2/SDL_main.h:
 C:/devkitPro/portlibs/switch/include/SDL2/SDL_stdinc.h:
@@ -457,3 +458,4 @@ C:/Users/marc/sysinfo/include/render.h:
 C:/Users/marc/sysinfo/include/data.h:
 C:/Users/marc/sysinfo/include/services.h:
 C:/Users/marc/sysinfo/include/pages.h:
+C:/Users/marc/sysinfo/include/usb_bridge.h:
