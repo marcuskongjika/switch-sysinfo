@@ -5,7 +5,7 @@
 #include "data.h"
 #include "services.h"
 #include "pages.h"
-#include "usb_bridge.h"
+#include "mtp.h"
 
 static const char *TAB_NAMES[T_COUNT] = {
     "System", "Hardware", "Power", "Storage",
@@ -44,7 +44,7 @@ int main(void) {
     SysData  data = {0};
     services_init(&svc);
     services_load_static(&svc, &data);
-    usb_bridge_start();
+    mtp_start();
 
     int curTab = 0;
 
@@ -71,7 +71,7 @@ int main(void) {
         svcSleepThread(33333333ULL);
     }
 
-    usb_bridge_stop();
+    mtp_stop();
     services_exit(&svc);
 
     TTF_CloseFont(fSm); TTF_CloseFont(fLbl); TTF_CloseFont(fVal);
