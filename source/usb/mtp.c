@@ -222,9 +222,9 @@ static void opGetDeviceInfo(void) {
     p32(&b, 0);              // DevicePropertiesSupported (none)
     p32(&b, 0);              // CaptureFormats (none)
     parr16(&b, PLAYBACK_FORMATS, sizeof(PLAYBACK_FORMATS) / 2);
-    pstr(&b, "Nintendo");
-    pstr(&b, "Nintendo Switch");
-    pstr(&b, "1.0");
+    pstr(&b, "marcuskongjika");
+    pstr(&b, "SysInfo MTP Responder");
+    pstr(&b, "1.2");
     pstr(&b, "SInfo");
     commitData(&b);
     respOK();

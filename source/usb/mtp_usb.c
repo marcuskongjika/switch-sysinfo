@@ -115,8 +115,8 @@ static Result setupDeviceDescriptors(void) {
     R_TRY(usbDsAddUsbLanguageStringDescriptor(NULL, langs, 1));
 
     u8 iMan = 0, iProd = 0, iSer = 0;
-    R_TRY(addStr(&iMan,  "Nintendo"));
-    R_TRY(addStr(&iProd, "Nintendo Switch"));
+    R_TRY(addStr(&iMan,  "marcuskongjika"));
+    R_TRY(addStr(&iProd, "SysInfo MTP Responder"));
 
     if (R_FAILED(setsysInitialize()) == false) {
         SetSysSerialNumber sn = {0};
