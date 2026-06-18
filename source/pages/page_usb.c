@@ -3,20 +3,22 @@
 #include "render.h"
 #include "data.h"
 #include "pages.h"
-#include "usb_bridge.h"
+#include "mtp.h"
 
 void page_usb(int cy, const SysData *d) {
     (void)d;
     int r = 0;
     char buf[256];
 
-    UsbBridgeStatus s;
-    usb_bridge_snapshot(&s);
+    MtpStatus s;
+    mtp_snapshot(&s);
 
-    ROW("USB Service", s.initialized ? "Ready" : "Unavailable",
+    ROW("MTP Service", s.initialized ? "Running" : "Unavailable",
         s.initialized ? GREEN : RED);
-    ROW("Host", s.hostConnected ? "Connected" : "Waiting for PC...",
-        s.hostConnected ? GREEN : GRAY);
+    ROW("Host", s.configured ? "Connected" : "Waiting for PC...",
+        s.configured ? GREEN : GRAY);
+    ROW("Session", s.sessionOpen ? "Open" : "Closed",
+        s.sessionOpen ? GREEN : GRAY);
     ROW("Last Command", s.lastOp[0] ? s.lastOp : "(none)", WHITE);
     ROW("Current File", s.curFile[0] ? s.curFile : "-", CYAN);
 
@@ -33,6 +35,6 @@ void page_usb(int cy, const SysData *d) {
     snprintf(buf, sizeof(buf), "%u received   /   %u sent", s.filesIn, s.filesOut);
     ROW("Files", buf, ACCENT);
 
-    ROW("Protocol", "usbComms bulk (vendor 057E:3000)", GRAY);
-    ROW("PC Tool", "python tools/nxfs.py  (needs pyusb)", GRAY);
+    ROW("Protocol", "MTP (PTP transport)", GRAY);
+    ROW("Mount", "Plug into PC — appears as a drive", GRAY);
 }
