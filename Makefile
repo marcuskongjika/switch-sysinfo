@@ -9,7 +9,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 
 TARGET		:=	sysinfo
 BUILD		:=	build
-SOURCES		:=	source
+SOURCES		:=	source source/pages
 DATA		:=	data
 INCLUDES	:=	include
 
