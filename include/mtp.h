@@ -1,3 +1,8 @@
+/*
+ * SysInfo - MTP responder
+ * Copyright (c) 2025 marcuskongjika
+ * Ported from haze (Atmosphere-NX). Licensed under GPLv2; see LICENSE.
+ */
 #pragma once
 #include <stdbool.h>
 #include <switch.h>
