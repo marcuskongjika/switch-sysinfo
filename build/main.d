@@ -1,4 +1,7 @@
 main.o: C:/Users/marc/sysinfo/source/main.c \
+ C:/devkitPro/libnx/include/arpa/inet.h \
+ C:/devkitPro/libnx/include/netinet/in.h \
+ C:/devkitPro/libnx/include/sys/_sockaddr_storage.h \
  C:/devkitPro/portlibs/switch/include/SDL2/SDL.h \
  C:/devkitPro/portlibs/switch/include/SDL2/SDL_main.h \
  C:/devkitPro/portlibs/switch/include/SDL2/SDL_stdinc.h \
@@ -224,6 +227,9 @@ main.o: C:/Users/marc/sysinfo/source/main.c \
  C:/devkitPro/libnx/include/switch/crypto/sha1.h \
  C:/devkitPro/libnx/include/switch/crypto/hmac.h \
  C:/devkitPro/libnx/include/switch/crypto/crc.h
+C:/devkitPro/libnx/include/arpa/inet.h:
+C:/devkitPro/libnx/include/netinet/in.h:
+C:/devkitPro/libnx/include/sys/_sockaddr_storage.h:
 C:/devkitPro/portlibs/switch/include/SDL2/SDL.h:
 C:/devkitPro/portlibs/switch/include/SDL2/SDL_main.h:
 C:/devkitPro/portlibs/switch/include/SDL2/SDL_stdinc.h:
