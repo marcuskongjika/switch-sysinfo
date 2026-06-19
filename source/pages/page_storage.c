@@ -1,3 +1,8 @@
+/*
+ * page_storage.c - "Storage" tab: SD card usage and RAM usage.
+ *
+ * The SD strings/fraction were computed in services_gather_data via statvfs.
+ */
 #include <stdio.h>
 #include <switch.h>
 #include "render.h"
@@ -16,6 +21,7 @@ void page_storage(int cy, const SysData *d) {
     snprintf(buf, sizeof(buf), "%.1f%%", d->sdPct * 100.f);
     ROW("SD Used", buf, ACCENT);
 
+    // Process RAM usage, mirrored from the Hardware tab for convenience.
     float mp = d->totalMem > 0 ? (float)d->usedMem / d->totalMem : 0.f;
     snprintf(buf, sizeof(buf), "%llu MB / %llu MB",
         (unsigned long long)(d->usedMem  / 1048576),

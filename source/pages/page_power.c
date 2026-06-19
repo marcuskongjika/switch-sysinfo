@@ -1,3 +1,8 @@
+/*
+ * page_power.c - "Power" tab: battery, charger, brightness, perf profile.
+ *
+ * Battery color: green > 50%, yellow > 20%, red otherwise.
+ */
 #include <stdio.h>
 #include <switch.h>
 #include "render.h"
@@ -13,6 +18,8 @@ void page_power(int cy, const SysData *d) {
     ROW("Battery", buf, bc);
     BAR(d->batPct / 100.f, bc);
 
+    // Charger type -> label + color. "EnoughPower" is a normal AC adapter;
+    // "LowPower" means it charges slowly (e.g. a weak USB source).
     const char *chrg; Col cc;
     switch (d->charger) {
         case PsmChargerType_Unconnected: chrg = "Not Charging";          cc = GRAY;   break;
@@ -30,6 +37,7 @@ void page_power(int cy, const SysData *d) {
         d->opMode == AppletOperationMode_Handheld ? "Handheld" : "Docked (TV)",
         WHITE);
 
+    // Perf profile, annotated with the rough clock targets for each mode.
     const char *perf = "Unknown";
     switch (d->perfMode) {
         case ApmPerformanceMode_Normal: perf = "Normal  (1020 MHz CPU / 307 MHz GPU)"; break;

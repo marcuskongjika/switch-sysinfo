@@ -1,27 +1,42 @@
+/*
+ * services.c - talks to all the libnx system services and packs results into
+ * a SysData snapshot for the UI.
+ *
+ * Pattern used throughout: every service init is guarded by an "Ok" flag. If a
+ * service fails to open, we simply leave its data at defaults and the UI shows
+ * zeros / "N/A" rather than crashing. gather_data() runs once per frame and is
+ * deliberately cheap.
+ */
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <sys/statvfs.h>
-#include <arpa/inet.h>
+#include <sys/statvfs.h>     // statvfs() for SD free/total space
+#include <arpa/inet.h>       // inet_ntoa() to format the IP address
 #include "services.h"
 
+// Open every service session we need. Each call is wrapped so one failure
+// doesn't stop the others. clkrst additionally needs a session per clock domain.
 void services_init(Services *svc) {
-    svc->psmOk  = R_SUCCEEDED(psmInitialize());
-    svc->clkOk  = R_SUCCEEDED(clkrstInitialize());
-    svc->tsOk   = R_SUCCEEDED(tsInitialize());
-    svc->sysOk  = R_SUCCEEDED(setsysInitialize());
-    svc->apmOk  = R_SUCCEEDED(apmInitialize());
-    svc->lblOk  = R_SUCCEEDED(lblInitialize());
-    svc->nifmOk = R_SUCCEEDED(nifmInitialize(NifmServiceType_System));
-    svc->timeOk = R_SUCCEEDED(timeInitialize());
-    svc->setOk  = R_SUCCEEDED(setInitialize());
+    svc->psmOk  = R_SUCCEEDED(psmInitialize());     // battery / charger
+    svc->clkOk  = R_SUCCEEDED(clkrstInitialize());  // clock rates
+    svc->tsOk   = R_SUCCEEDED(tsInitialize());      // temperatures
+    svc->sysOk  = R_SUCCEEDED(setsysInitialize());  // model/firmware/nickname
+    svc->apmOk  = R_SUCCEEDED(apmInitialize());     // performance mode
+    svc->lblOk  = R_SUCCEEDED(lblInitialize());     // backlight brightness
+    svc->nifmOk = R_SUCCEEDED(nifmInitialize(NifmServiceType_System)); // network
+    svc->timeOk = R_SUCCEEDED(timeInitialize());    // clock
+    svc->setOk  = R_SUCCEEDED(setInitialize());     // language / region
 
     if (svc->clkOk) {
+        // Open a session for each domain so we can query its current rate.
         clkrstOpenSession(&svc->cpuS, PcvModuleId_CpuBus, 3);
         clkrstOpenSession(&svc->gpuS, PcvModuleId_GPU, 3);
         clkrstOpenSession(&svc->emcS, PcvModuleId_EMC, 3);
     }
 
+    // Motion sensors. Try a dual Joy-Con pair first (2 handles); if that fails,
+    // fall back to the handheld console's built-in sensor (1 handle). gyroN
+    // records how many we actually started so exit() can stop the right number.
     svc->gyroN = 0;
     if (R_SUCCEEDED(hidGetSixAxisSensorHandles(svc->gyroH, 2,
             HidNpadIdType_No1, HidNpadStyleTag_NpadJoyDual))) {
@@ -35,6 +50,8 @@ void services_init(Services *svc) {
     }
 }
 
+// Read the things that never change while the app runs, so we don't re-query
+// them every frame.
 void services_load_static(Services *svc, SysData *data) {
     if (svc->sysOk) {
         setsysGetFirmwareVersion(&data->fw);
@@ -43,18 +60,19 @@ void services_load_static(Services *svc, SysData *data) {
     }
     if (svc->setOk) {
         u64 lc = 0;
-        setGetLanguageCode(&lc);
-        memcpy(data->langStr, &lc, 8);
-        data->langStr[8] = '\0';
+        setGetLanguageCode(&lc);          // returns up to 8 bytes packed in a u64
+        memcpy(data->langStr, &lc, 8);    // copy those bytes out as a string...
+        data->langStr[8] = '\0';          // ...and null-terminate
         setGetRegionCode(&data->region);
     }
 }
 
+// Refresh all the live values. Called once per frame from main().
 void services_gather_data(Services *svc, SysData *data) {
     data->nifmOk = svc->nifmOk;
     data->gyroOk = svc->gyroN > 0;
 
-    // Battery
+    // Battery + charger.
     data->batPct  = 0;
     data->charger = PsmChargerType_Unconnected;
     if (svc->psmOk) {
@@ -62,7 +80,7 @@ void services_gather_data(Services *svc, SysData *data) {
         psmGetChargerType(&data->charger);
     }
 
-    // Clocks
+    // Clock rates (Hz) per domain.
     data->cpuHz = data->gpuHz = data->emcHz = 0;
     if (svc->clkOk) {
         clkrstGetClockRate(&svc->cpuS, &data->cpuHz);
@@ -70,27 +88,28 @@ void services_gather_data(Services *svc, SysData *data) {
         clkrstGetClockRate(&svc->emcS, &data->emcHz);
     }
 
-    // Temperature
+    // Temperatures (milli-Celsius). Internal = SoC, External = board/ambient.
     data->tempMC = data->temp2MC = 0;
     if (svc->tsOk) {
         tsGetTemperatureMilliC(TsLocation_Internal, &data->tempMC);
         tsGetTemperatureMilliC(TsLocation_External, &data->temp2MC);
     }
 
-    // Memory
+    // Memory: ask the kernel for this process's total/used heap+code size.
     svcGetInfo(&data->totalMem, InfoType_TotalMemorySize, CUR_PROCESS_HANDLE, 0);
     svcGetInfo(&data->usedMem,  InfoType_UsedMemorySize,  CUR_PROCESS_HANDLE, 0);
 
-    // APM / op mode
+    // Performance mode (normal/boost) and handheld/docked.
     data->perfMode = ApmPerformanceMode_Invalid;
     if (svc->apmOk) apmGetPerformanceMode(&data->perfMode);
     data->opMode = appletGetOperationMode();
 
-    // Brightness
+    // Backlight brightness (0..1).
     data->bright = 0.f;
     if (svc->lblOk) lblGetCurrentBrightnessSetting(&data->bright);
 
-    // Time
+    // Wall-clock time -> formatted string. timeGetCurrentTime gives POSIX
+    // seconds; localtime + strftime turn it into "YYYY-MM-DD  HH:MM:SS".
     strncpy(data->timeStr, "N/A", sizeof(data->timeStr));
     if (svc->timeOk) {
         u64 posix = 0;
@@ -101,7 +120,9 @@ void services_gather_data(Services *svc, SysData *data) {
         }
     }
 
-    // SD storage
+    // SD card usage via statvfs on the mounted "sdmc:/" device. f_frsize is the
+    // block size; multiply by block counts to get bytes. We pre-format the
+    // human strings here and also store a 0..1 used fraction for the bar.
     strncpy(data->sdTot,  "N/A", sizeof(data->sdTot));
     strncpy(data->sdFree, "N/A", sizeof(data->sdFree));
     strncpy(data->sdUsed, "N/A", sizeof(data->sdUsed));
@@ -117,7 +138,8 @@ void services_gather_data(Services *svc, SysData *data) {
         snprintf(data->sdUsed, sizeof(data->sdUsed), "%.2f GB", us  / 1e9);
     }
 
-    // Network
+    // Network: connection status gives type + signal + connected state. If
+    // connected, also fetch the current IPv4 and format it.
     data->netConnected = false;
     strncpy(data->ipStr, "N/A", sizeof(data->ipStr));
     data->connType = 0;
@@ -138,12 +160,14 @@ void services_gather_data(Services *svc, SysData *data) {
         }
     }
 
-    // Gyro
+    // Motion: sample the first sensor's latest state for the Motion tab.
     memset(&data->gyroState, 0, sizeof(data->gyroState));
     if (svc->gyroN > 0)
         hidGetSixAxisSensorStates(svc->gyroH[0], &data->gyroState, 1);
 }
 
+// Close everything we opened, in a safe order. Stop only the motion sensors we
+// actually started (gyroN of them).
 void services_exit(Services *svc) {
     for (int i = 0; i < svc->gyroN; i++)
         hidStopSixAxisSensor(svc->gyroH[i]);
